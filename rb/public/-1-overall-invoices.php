@@ -1,0 +1,850 @@
+<?php
+include('library/session_info.php');
+$pagetitle = ' - Create Orders';
+$pagedescr = ' ';
+$pagekeywords = ' ';
+include(INC_PATH . "system-info.php");
+include(INC_PATH . "header.php");
+?>
+    <body>
+        <!-- Navigation Bar-->
+        <header id="topnav">
+            <div class="topbar-main">
+                <!-- Start TOP Navigation -->
+				<?php include("includes/topmenu.php"); ?>
+				<!-- End TOP Navigation -->	
+            </div>
+
+            <div class="navbar-custom">
+                <!-- Start Main Menu -->
+				<?php include("includes/mainmenu.php"); ?>
+				<!-- End Main Menu -->   
+            </div> <!-- end navbar-custom -->
+        </header>
+        <!-- End Navigation Bar-->
+
+
+        <div class="wrapper">
+            <div class="container">
+
+                <?php
+                if (isset($_GET['status'])) {
+                    $status = $_GET['status'];
+                    if ($status == 'success') {
+                        echo '<div class="alert alert-success alert-dismissable">
+												<button type="button" class="close" data-dismiss="alert" aria-hidden="true">
+													<i class="fa fa-close"></i>
+												</button>
+												<b>File (Report_date.csv) Downloaded to "c:Report_date.csv"</b>
+												</div>';
+                    }
+                    if ($status == 'failed') {
+                        echo '<div class="alert alert-danger alert-dismissable">
+												<button type="button" class="close" data-dismiss="alert" aria-hidden="true">
+													<i class="fa fa-close"></i>
+												</button>
+												Error Occer! <b>User Details not Saved</b>
+												</div>';
+                    }
+                }
+                ?>
+                <!-- Page-Title -->
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="btn-group pull-right m-t-15">
+                            <ul class="dropdown-menu drop-menu-right" role="menu">
+                                <li><a href="#">Action</a></li>
+                                <li><a href="#">Another action</a></li>
+                                <li><a href="#">Something else here</a></li>
+                                <li class="divider"></li>
+                                <li><a href="#">Separated link</a></li>
+                            </ul>
+                        </div>
+
+                        <h4 class="page-title">Reports</h4>
+                        <ol class="breadcrumb">
+                            <li><a href="#"><?php echo $companyname; ?></a></li>
+
+                        </ol>
+                    </div>
+                </div>
+
+
+				<div class="card-box">
+					<form method="GET" action="#" data-parsley-validate novalidate>
+						<div class="row">
+							<div class="col-md-12" >
+								<h4 class="m-t-0 header-title"><b>Reports </b></h4>
+
+
+                              <!--  <div class="form-group col-lg-4">
+                                    <label for="lname">From*</label>
+                                    <input type="text" name="from_date" parsley-trigger="change" value="<?php echo $lname;?>" required placeholder="Enter Last Name" class="form-control" id="lname">
+                                </div> -->
+<!--
+								<div class="form-group col-lg-4">
+									<label for="lname">To*</label>
+									<input type="text" name="to_date" parsley-trigger="change" value="<?php echo $lname;?>" required placeholder="Enter Last Name" class="form-control" id="lname">
+								</div>-->
+
+
+                                
+								 <div class="col-md-12">
+								
+									<div class="col-md-12">
+
+                                        <?php
+                                        if (isset($_GET['from_date']))
+                                        {
+                                        $from_date=$_GET['from_date'];
+                                        $to_date=$_GET['to_date'];
+                                            $f_date = str_replace("/","-",$from_date);
+                                            $t_date = str_replace("/","-",$to_date);
+                                        }
+                                        ?>
+                                        <div class="col-md-5">
+										<div class="input-daterange input-group"  style="z-index: 1000">
+											<input type="date" class="form-control" value="<?php if (isset($_GET['from_date']))
+                                            { echo $f_date;}?>" name="from_date" required />
+											<span class="input-group-addon bg-custom b-0 text-white">to</span>
+											<input type="date" class="form-control" value="<?php  if (isset($_GET['from_date']))
+                                            { echo $t_date;}?>" name="to_date" required/>
+										</div>
+                                    </div>
+                                        <div class="col-md-4">
+                                        <select name="user_id" class="selectpicker" data-live-search="true"  data-style="btn-white">
+                                            <option value="">All Customer</option>
+                                            
+                                            <?php
+                                            include('class/class_common_access.php');
+                                            $load_all_cus= Common_access::load_all_cust();
+                                            while ($row_cate = mysqli_fetch_array($load_all_cus)) {
+                                                ?>
+                                                <option value="<?php echo $row_cate['cus_id'];?>"><?php echo $row_cate['cus_fname']; ?></option>
+                                            <?php } ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                       <select name="paymethod" class="selectpicker" data-live-search="true"  data-style="btn-white">
+                                            <option value="">Select Payment Type</option>
+                                            <option value="Cash">Cash</option>
+                                            <option value="Credit">Credit</option>
+                                            <option value="Cheque">Cheque</option>
+                                            <option value="Staff">Staff</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-5">
+                                        <button class="btn btn-primary waves-effect waves-light" type="submit" name="search">Search</button>
+                                    </div>
+									</div>
+                                    
+								</div>
+
+							</div>
+                                    
+						</div>
+
+
+					</form>
+				</div>
+                <br>
+                <br>
+                <br>
+                <br>
+                <br>
+				 <div class="row" id="ticketPrintArea">
+                    <div class="col-sm-12">
+                        <div class="card-box">                           
+                            <table id="demo-foo-filtering" class="table table-striped toggle-circle m-b-0" data-page-size="100" border="0">
+                                <thead>
+                                    <tr>
+                                        <th  style="width: 12%;" data-toggle="true">Invoice ID</th>
+                                        <th data-hide="phone, tablet">Cus Name</th>
+                                        <th>Delivery Date</th>
+                                        <th style="width: 10%;" data-hide="phone, tablet">Payment Method</th>
+                                        <th style="width: 12%; text-align: right;" data-hide="phone, tablet">subTotal</th>
+                                        <th style="width: 12%; text-align: right;" data-hide="phone, tablet">Paid Amount</th>
+                                        <th style="width: 12%; text-align: right;" data-hide="phone, tablet">Due</th>
+                                        <th style="width: 12%; text-align: right;" data-hide="phone, tablet">Order Status</th>
+                                        
+                                       
+                                    </tr>
+                                </thead>
+                                <div class="form-inline m-b-20">
+                                    <div class="row">
+                                        <div class="col-sm-6 text-xs-center">
+                                            <div class="form-group">
+                                                <label class="control-label m-r-5">Status</label>
+                                                <select id="demo-foo-filter-status" class="form-control input-sm">
+                                                    <option value="">Show all</option>
+                                                    <option value="Pending">Pending</option>
+                                                    <option value="Paid">Paid</option>
+                                                    <option value="Due">Un Paid</option>
+                                                    <option value="Delivered">Delivered</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6 text-xs-center text-right">
+                                            <div class="form-group">
+                                                <input id="demo-foo-search" type="text" placeholder="Search" class="form-control input-sm" autocomplete="on">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <tbody>
+                                <?php
+                              include ('class/class.report.php');
+                              $sum=0;
+                                $paid_sum=0;
+                                $blnc_sum=0;
+                              if(isset($_GET['search']))
+                              {
+                                $user_id=$_GET['user_id'];
+                                $paymethod=$_GET['paymethod'];
+                                $fromdate=$_GET['from_date'];
+                                $enddate=$_GET['to_date'];
+                                
+                            if($user_id=="" && $paymethod=="")
+                            {
+                                $get_cus_details=Report::get_cus_details($fromdate,$enddate);
+                                while($row=mysqli_fetch_array($get_cus_details))
+                                {
+                                    $cus_id=$row['rox_cust_id'];
+                                    $dis=$row['rox_dis'];
+                                    $adv=$row['rox_advc'];
+                                    $sercharge=$row['rox_ser_charge'];
+                                    $delcharge=$row['rox_del_charge'];
+                                    $invid=$row['rox_inv_id'];
+                                    $pay_status=$row['rox_pay_status'];
+
+                                    $deldate_time=report::get_date_time($invid);
+                                    $date_row=mysqli_fetch_array($deldate_time);
+                                    $deldate=$date_row['rox_inv_due'];
+                                    $deltime=$date_row['rox_inv_time'];
+
+                                    $get_tot=report::get_total($invid);
+                                    $row2=mysqli_fetch_array($get_tot);
+                                    $sub_tot1=$row2['cal_amnt'];
+                                    $odr_status=$row2['rox_ord_status'];
+                                    $sub_tot=$sub_tot1+$sercharge+$delcharge;
+                        
+                                    $get_paid=report::get_paid($cus_id,$invid);
+                                    $rowcnt=mysqli_num_rows($get_paid);
+                                    
+                                    $row3=mysqli_fetch_array($get_paid);
+                                    
+                                        $paidamt=$row3['rox_payment'];
+                                        if($rowcnt>0)
+                                        {
+                                            $paid=$adv+$paidamt;
+                                        }
+                                        else if($rowcnt==0)
+                                        {
+                                            $paid=$adv;
+                                        }
+
+                                    ?>
+                                    <tr>
+                                        <td>
+                                           
+                                                <a onclick="window.open('invoice-A5?inv_code=<?php echo $invid;  ?>&from_date=<?php echo $f_date;  ?>&to_date=&user_id=&p_status=&d_status=&','My Win','toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=0,width=450,height=660',); return false;"  class="wm-default-btn"><span><?php echo $invid;  ?></span></a>
+                                            </td>
+                                        <td><?php echo $row['cus_fname'];?></td>
+                                        <td><?php echo $deldate?> - <?php echo $deltime;?></td>
+                                        <td><?php echo $row['rox_pay_typ'];?></td>
+                                        <td align="right"><?php echo  number_format($sub_tot,2);?></td>
+                                        <td align="right"><?php echo  number_format($paid,2);?></td>
+                                        <td align="right">
+                                            <?php
+                                            if($row['rox_pay_status']==0)
+                                            {
+                                                ?>
+                                                <?php echo number_format($row['rox_pay_status'],2);?>
+                                                <?php
+                                            }
+                                            elseif($row['rox_pay_status']!=0)
+                                            {
+                                                ?>
+                                                <a href="#" title="Pay All Payment" data-toggle="modal" 
+                                                data-target="#exampleModalLong<?php echo $invid;?>"><?php echo number_format($row['rox_pay_status'],2);?>
+                                                    
+                                                </a>
+                                                <?php
+                                                
+                                            }
+                                            ?>
+                                                
+                                            </td>
+                                        <td align="right"<?php if($odr_status=='Pending'){ ?> style=" font-weight: bold;color: #f00"<?php } ?> ><?php echo $odr_status?></td>
+                                    </tr>
+
+                                    <div class="modal fade<?php echo $invid;?>" id="exampleModalLong<?php echo $invid;?>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="exampleModalLongTitle">Make Payment</h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <form action="functions/function_payment.php" method="post">
+                                                    <div class="modal-body">
+                                                        <div class="form-group">
+                                                            <input type="text" name="invid" value="<?php echo $invid;?>" hidden>
+                                                            <input type="text" name="cusid" value="<?php echo $cus_id;?>" hidden>
+                                                            <input type="text" id="Mbalance" name="balance" class="Mbalance" value="<?php echo $pay_status;?>" hidden>
+                                                            <label for="main_cate">Payment Type</label>
+                                                            <select class="form-control" name="type">
+                                                                <option value="Cash">Cash</option>
+                                                                <option value="Card">Card</option>
+                                                            </select>
+
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="main_cate_des">Payment <span style=" font-weight: normal;color: #f00">(Due Amount is <?php echo number_format($pay_status,2);?>)</span></label>
+                                                            <input type="text" name="payment"  required placeholder="Enter payment" class="form-control" id="payment"/>
+                                                                                                                    </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                        <button type="submit" class="btn btn-primary valSubmit" name="fullsubmit" id="valSubmit" 
+                                                        onclick=" return validate(<?php echo $pay_status;?>)">Submit</button>
+                                                    </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    
+                                                <?php
+                                            $sum+=$sub_tot;
+                                            $paid_sum+=$paid;
+                                            $blnc_sum+=$row['rox_pay_status'];
+
+
+                                }
+
+                                ?>
+                                
+                                    <?php
+
+                            }
+                            if($paymethod=="")
+                            {
+                                $get_cus_details=Report::get_cus_details1($user_id,$fromdate,$enddate);
+                                while($row=mysqli_fetch_array($get_cus_details))
+                                {
+                                    $cus_id=$row['rox_cust_id'];
+                                    $dis=$row['rox_dis'];
+                                    $adv=$row['rox_advc'];
+                                    $sercharge=$row['rox_ser_charge'];
+                                    $delcharge=$row['rox_del_charge'];
+                                    $invid=$row['rox_inv_id'];
+                                    $pay_status=$row['rox_pay_status'];
+
+                                    $get_tot=report::get_total($invid);
+                                    $row2=mysqli_fetch_array($get_tot);
+                                    $sub_tot1=$row2['cal_amnt'];
+                                    $odr_status=$row2['rox_ord_status'];
+                                    $sub_tot=$sub_tot1+$sercharge+$delcharge;
+                                    
+                                    $deldate_time=report::get_date_time($invid);
+                                    $date_row=mysqli_fetch_array($deldate_time);
+                                    $deldate=$date_row['rox_inv_due'];
+                                    $deltime=$date_row['rox_inv_time'];
+
+                                    $get_paid=report::get_paid($cus_id,$invid);
+                                    $rowcnt=mysqli_num_rows($get_paid);
+                                    
+                                    $row3=mysqli_fetch_array($get_paid);
+                                    
+                                        $paidamt=$row3['rox_payment'];
+                                        if($rowcnt>0)
+                                        {
+                                            $paid=$adv+$paidamt;
+                                        }
+                                        else if($rowcnt==0)
+                                        {
+                                            $paid=$adv;
+                                        }
+
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <a onclick="window.open('invoice-A5?inv_code=<?php echo $invid;  ?>&from_date=<?php echo $f_date;  ?>&to_date=&user_id=&p_status=&d_status=&','My Win','toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=0,width=450,height=660',); return false;"  class="wm-default-btn"><span><?php echo $invid;  ?></span></a>
+                                        </td>
+                                        <td><?php echo $row['cus_fname'];?></td>
+                                        <td><?php echo $deldate?> - <?php echo $deltime;?></td>
+                                        <td><?php echo $row['rox_pay_typ'];?></td>
+                                        <td align="right"><?php echo  number_format($sub_tot,2);?></td>
+                                        <td align="right"><?php echo  number_format($paid,2);?></td>
+                                        <td align="right">
+                                            <?php
+                                            if($row['rox_pay_status']==0)
+                                            {
+                                                ?>
+                                                <?php echo number_format($row['rox_pay_status'],2);?>
+                                                <?php
+                                            }
+                                            elseif($row['rox_pay_status']!=0)
+                                            {
+                                                ?>
+                                                <a href="#" title="Pay All Payment" data-toggle="modal" 
+                                                data-target="#exampleModalLong<?php echo $invid;?>"><?php echo number_format($row['rox_pay_status'],2);?>
+                                                    
+                                                </a>
+                                                <?php
+                                                
+                                            }
+                                            ?>
+                                        </td>
+                                        <td align="right"><?php echo $odr_status?></td>
+                                    </tr>
+                                    <div class="modal fade<?php echo $invid;?>" id="exampleModalLong<?php echo $invid;?>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="exampleModalLongTitle">Make Payment</h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <form action="functions/function_payment.php" method="post">
+                                                    <div class="modal-body">
+                                                        <div class="form-group">
+                                                            <input type="text" name="invid" value="<?php echo $invid;?>" hidden>
+                                                            <input type="text" name="cusid" value="<?php echo $cus_id;?>" hidden>
+                                                            <input type="text" id="Mbalance" name="balance" class="Mbalance" value="<?php echo $pay_status;?>" hidden>
+                                                            <label for="main_cate">Payment Type</label>
+                                                            <select class="form-control" name="type">
+                                                                <option value="Cash">Cash</option>
+                                                                <option value="Card">Card</option>
+                                                            </select>
+
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="main_cate_des">Payment<span style=" font-weight: normal;color: #f00">(Due Amount is <?php echo number_format($pay_status,2);?>)</span></label>
+                                                            <input type="text" name="payment" required class="form-control" id="Payment" Placeholder="Enter Payment">
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                        <button type="submit" class="btn btn-primary valSubmit" name="fullsubmit" id="valSubmit" 
+                                                        onclick=" return validate26(<?php echo $pay_status;?>)">Submit</button>
+                                                    </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php
+                                 $sum+=$sub_tot;
+                                 $paid_sum+=$paid;
+                                 $blnc_sum+=$row['rox_pay_status'];
+                                }
+                                ?>
+                                
+                                    <?php
+                            }
+                            if($user_id=="")
+                            {
+                                $get_cus_details=Report::get_cus_details2($paymethod,$fromdate,$enddate);
+                                while($row=mysqli_fetch_array($get_cus_details))
+                                {
+                                    $cus_id=$row['rox_cust_id'];
+                                    $dis=$row['rox_dis'];
+                                    $adv=$row['rox_advc'];
+                                    $sercharge=$row['rox_ser_charge'];
+                                    $delcharge=$row['rox_del_charge'];
+                                    $invid=$row['rox_inv_id'];
+                                    $pay_status=$row['rox_pay_status'];
+                                    $get_tot=report::get_total($invid);
+                                    $row2=mysqli_fetch_array($get_tot);
+                                    $sub_tot1=$row2['cal_amnt'];
+                                    $odr_status=$row2['rox_ord_status'];
+                                    $sub_tot=$sub_tot1+$sercharge+$delcharge;
+                                    
+                                    $deldate_time=report::get_date_time($invid);
+                                    $date_row=mysqli_fetch_array($deldate_time);
+                                    $deldate=$date_row['rox_inv_due'];
+                                    $deltime=$date_row['rox_inv_time'];
+
+                                    $get_paid=report::get_paid($cus_id,$invid);
+                                    $rowcnt=mysqli_num_rows($get_paid);
+                                    
+                                    $row3=mysqli_fetch_array($get_paid);
+                                    
+                                        $paidamt=$row3['rox_payment'];
+                                        if($rowcnt>0)
+                                        {
+                                            $paid=$adv+$paidamt;
+                                        }
+                                        else if($rowcnt==0)
+                                        {
+                                            $paid=$adv;
+                                        }
+
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <a onclick="window.open('invoice-A5?inv_code=<?php echo $invid;  ?>&from_date=<?php echo $f_date;  ?>&to_date=&user_id=&p_status=&d_status=&','My Win','toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=0,width=450,height=660',); return false;"  class="wm-default-btn"><span><?php echo $invid;  ?></span></a>
+                                                
+                                            </td>
+                                        <td><?php echo $row['cus_fname'];?></td>
+                                        <td><?php echo $deldate?> - <?php echo $deltime;?></td>
+                                        <td><?php echo $row['rox_pay_typ'];?></td>
+                                        <td align="right"><?php echo  number_format($sub_tot,2);?></td>
+                                        <td align="right"><?php echo  number_format($paid,2);?></td>
+                                        <td align="right">
+                                            <?php
+                                            if($row['rox_pay_status']==0)
+                                            {
+                                                ?>
+                                                <?php echo number_format($row['rox_pay_status'],2);?>
+                                                <?php
+                                            }
+                                            elseif($row['rox_pay_status']!=0)
+                                            {
+                                                ?>
+                                                <a href="#" title="Pay All Payment" data-toggle="modal" 
+                                                data-target="#exampleModalLong<?php echo $invid;?>"><?php echo number_format($row['rox_pay_status'],2);?>
+                                                    
+                                                </a>
+                                                <?php
+                                                
+                                            }
+                                            ?>
+                                        </td>
+                                        <td align="right"><?php echo $odr_status?></td>
+                                    </tr>
+                                    <div class="modal fade<?php echo $invid;?>" id="exampleModalLong<?php echo $invid;?>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="exampleModalLongTitle">Make Payment</h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <form action="functions/function_payment.php" method="post">
+                                                    <div class="modal-body">
+                                                        <div class="form-group">
+                                                            <input type="text" name="invid" value="<?php echo $invid;?>" hidden>
+                                                            <input type="text" name="cusid" value="<?php echo $cus_id;?>" hidden>
+                                                            <input type="text" id="Mbalance" name="balance" class="Mbalance" value="<?php echo $pay_status;?>" hidden>
+                                                            <label for="main_cate">Payment Type</label>
+                                                            <select class="form-control" name="type">
+                                                                <option value="Cash">Cash</option>
+                                                                <option value="Card">Card</option>
+                                                            </select>
+
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="main_cate_des">Payment<span style=" font-weight: normal;color: #f00">(Due Amount is <?php echo number_format($pay_status,2);?>)</span></label>
+                                                            <input type="text" name="payment" required class="form-control" id="Payment" Placeholder="Enter Payment">
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                        <button type="submit" class="btn btn-primary valSubmit" name="fullsubmit" id="valSubmit" 
+                                                        onclick=" return validate27(<?php echo $pay_status;?>)">Submit</button>
+                                                    </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php
+                                 $sum+=$sub_tot;
+                                 $paid_sum+=$paid;
+                                 $blnc_sum+=$row['rox_pay_status'];
+                                }
+                                ?>
+                                
+                                    <?php
+                            }
+                            if($user_id!="" && $paymethod!="")
+                            {
+                                $get_cus_details=Report::get_cus_details3($user_id,$paymethod,$fromdate,$enddate);
+                                while($row=mysqli_fetch_array($get_cus_details))
+                                {
+                                    $cus_id=$row['rox_cust_id'];
+                                    $dis=$row['rox_dis'];
+                                    $adv=$row['rox_advc'];
+                                    $sercharge=$row['rox_ser_charge'];
+                                    $delcharge=$row['rox_del_charge'];
+                                    $invid=$row['rox_inv_id'];
+                                    $pay_status=$row['rox_pay_status'];
+                                    $get_tot=report::get_total($invid);
+                                    $row2=mysqli_fetch_array($get_tot);
+                                    $sub_tot1=$row2['cal_amnt'];
+                                    $odr_status=$row2['rox_ord_status'];
+                                    $sub_tot=$sub_tot1+$sercharge+$delcharge;
+                                    
+                                    $deldate_time=report::get_date_time($invid);
+                                    $date_row=mysqli_fetch_array($deldate_time);
+                                    $deldate=$date_row['rox_inv_due'];
+                                    $deltime=$date_row['rox_inv_time'];
+
+                                    $get_paid=report::get_paid($cus_id,$invid);
+                                    $rowcnt=mysqli_num_rows($get_paid);
+                                    
+                                    $row3=mysqli_fetch_array($get_paid);
+                                    
+                                        $paidamt=$row3['rox_payment'];
+                                        if($rowcnt>0)
+                                        {
+                                            $paid=$adv+$paidamt;
+                                        }
+                                        else if($rowcnt==0)
+                                        {
+                                            $paid=$adv;
+                                        }
+
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <a onclick="window.open('invoice-A5?inv_code=<?php echo $invid;  ?>&from_date=<?php echo $f_date;  ?>&to_date=&user_id=&p_status=&d_status=&','My Win','toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=0,width=450,height=660',); return false;"  class="wm-default-btn"><span><?php echo $invid;  ?></span></a>
+                                                
+                                            </td>
+                                        <td><?php echo $row['cus_fname'];?></td>
+                                        <td><?php echo $deldate?> - <?php echo $deltime;?></td>
+                                        <td><?php echo $row['rox_pay_typ'];?></td>
+                                        <td align="right"><?php echo  number_format($sub_tot,2);?></td>
+                                        <td align="right"><?php echo  number_format($paid,2);?></td>
+                                        <td align="right">
+                                            <?php
+                                            if($row['rox_pay_status']==0)
+                                            {
+                                                ?>
+                                                <?php echo number_format($row['rox_pay_status'],2);?>
+                                                <?php
+                                            }
+                                            elseif($row['rox_pay_status']!=0)
+                                            {
+                                                ?>
+                                                <a href="#" title="Pay All Payment" data-toggle="modal" 
+                                                data-target="#exampleModalLong<?php echo $invid;?>"><?php echo number_format($row['rox_pay_status'],2);?>
+                                                    
+                                                </a>
+                                                <?php
+                                                
+                                            }
+                                            ?>
+                                        </td>
+                                        <td align="right"><?php echo $odr_status?></td>
+                                    </tr>
+                                    <div class="modal fade<?php echo $invid;?>" id="exampleModalLong<?php echo $invid;?>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="exampleModalLongTitle">Make Payment</h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <form action="functions/function_payment.php" method="post">
+                                                    <div class="modal-body">
+                                                        <div class="form-group">
+                                                            <input type="text" name="invid" value="<?php echo $invid;?>" hidden>
+                                                            <input type="text" name="cusid" value="<?php echo $cus_id;?>" hidden>
+                                                            <input type="text" id="Mbalance" name="balance" class="Mbalance" value="<?php echo $pay_status;?>" hidden>
+                                                            <label for="main_cate">Payment Type</label>
+                                                            <select class="form-control" name="type">
+                                                                <option value="Cash">Cash</option>
+                                                                <option value="Card">Card</option>
+                                                            </select>
+
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="main_cate_des">Payment<span style=" font-weight: normal;color: #f00">(Due Amount is <?php echo number_format($pay_status,2);?>)</span></label>
+                                                            <input type="text" name="payment" required class="form-control" id="Payment" Placeholder="Enter Payment">
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                        <button type="submit" class="btn btn-primary valSubmit" name="fullsubmit" id="valSubmit" 
+                                                        onclick=" return validate28(<?php echo $pay_status;?>)">Submit</button>
+                                                    </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php
+                                 $sum+=$sub_tot;
+                                 $paid_sum+=$paid;
+                                 $blnc_sum+=$row['rox_pay_status'];
+                                }
+                                ?>
+                                
+                                    <?php
+                            }
+                              }
+                              ?>
+                               <tr>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td style="font-weight: bolder;">Total:</td>
+                                    <td style="font-weight: bolder;" align="right"><?php echo  number_format($sum,2);?></td>
+                                    <td style="font-weight: bolder;" align="right"><?php echo  number_format($paid_sum,2);?></td>
+                                    <td style="font-weight: bolder;" align="right"><?php echo  number_format($blnc_sum,2);?></td>
+                                    </tr>         
+                                
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <a href="javascript:void(0);" class="btn btn-inverse waves-effect waves-light printid" id="btnPrint"><i class="fa fa-print"></i> Print Reoprt</a>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <a href="functions/function_excell.php?out_all=yes" class="btn btn-inverse waves-effect waves-light printid" id="btnPrint"><i class="fa fa-print"></i> Export</a>
+                                    </div>
+                                </div>
+
+
+                               <!--  <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label for="odr_adv" class="control-label">Total Amount</label>
+                                        <input type="text" name="" class="form-control" disabled value="">
+                                    </div>
+                                </div> -->
+
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="5">
+                                            <div class="text-right">
+                                                <ul class="pagination pagination-split m-t-30 m-b-0"></ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- Footer -->
+                <footer class="footer text-right">
+                    <!-- Footer Section Starts-->
+					<?php include("includes/footer.php"); ?>
+					<!-- Footer Section Ends -->
+                </footer>
+                <!-- End Footer -->
+
+            </div> <!-- end container -->
+        </div>
+        <!-- end wrapper -->
+<!-- Modal-->
+
+
+
+        <!-- jQuery  -->
+        <script src="assets/site/js/jquery.min.js"></script>
+        <script src="assets/site/js/bootstrap.min.js"></script>
+        
+
+
+        <script src="assets/site/js/detect.js"></script>
+        <script src="assets/site/js/fastclick.js"></script>
+        <script src="assets/site/js/jquery.slimscroll.js"></script>
+        <script src="assets/site/js/jquery.blockUI.js"></script>
+        <script src="assets/site/js/waves.js"></script>
+        <script src="assets/site/js/wow.min.js"></script>
+        <script src="assets/site/js/jquery.nicescroll.js"></script>
+        <script src="assets/site/js/jquery.scrollTo.min.js"></script>
+
+        <script src="assets/site/plugins/timepicker/bootstrap-timepicker.js"></script>
+        <script src="assets/site/plugins/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
+        <script src="assets/site/plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+        <script src="assets/site/plugins/clockpicker/js/bootstrap-clockpicker.min.js"></script>
+        <script src="assets/site/plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
+
+        <script src="assets/site/js/jquery.print.min.js"></script>
+
+        <script>
+            jQuery(function($) {
+                'use strict';
+
+                $("#ticketPrintArea").find('#btnPrint').on('click', function() {
+                    //Print ele4 with custom options
+                    $("#ticketPrintArea").print({
+                        //Use Global styles
+                        globalStyles : true,
+                        //Add link with attrbute media=print
+                        mediaPrint : false,
+                        //Custom stylesheet
+                        // stylesheet : "http://fonts.googleapis.com/css?family=Inconsolata",
+                        //Print in a hidden iframe
+                        iframe : false,
+                        //Don't print this
+                        noPrintSelector : ".avoid-this",
+                        //Add this at top
+                        // prepend : "Hello World!!!<br/>",
+                        //Add this on bottom
+                        //append : "<br/>Buh Bye!",
+                        //Log to console when printing is done via a deffered callback
+                        deferred: $.Deferred().done(function() { console.log('Printing done', arguments); })
+                    });
+                });
+                // Fork https://github.com/sathvikp/jQuery.print for the full list of options
+            });
+
+        </script>
+
+        <!-- Parsly js -->
+        <script type="text/javascript" src="assets/site/plugins/parsleyjs/parsley.min.js"></script>
+
+        <script type="text/javascript">
+			$(document).ready(function() {
+				$('form').parsley();
+			});
+		</script>
+		
+        <script src="assets/site/plugins/bootstrap-tagsinput/js/bootstrap-tagsinput.min.js"></script>
+        <script src="assets/site/plugins/switchery/js/switchery.min.js"></script>
+        <script type="text/javascript" src="assets/site/plugins/multiselect/js/jquery.multi-select.js"></script>
+        <script type="text/javascript" src="assets/site/plugins/jquery-quicksearch/jquery.quicksearch.js"></script>
+        <script src="assets/site/plugins/bootstrap-select/js/bootstrap-select.min.js" type="text/javascript"></script>
+        <script src="assets/site/plugins/bootstrap-filestyle/js/bootstrap-filestyle.min.js" type="text/javascript"></script>
+        <script src="assets/site/plugins/bootstrap-touchspin/js/jquery.bootstrap-touchspin.min.js" type="text/javascript"></script>
+        <script src="assets/site/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js" type="text/javascript"></script>
+
+
+        <script type="text/javascript" src="assets/site/pages/jquery.form-advanced.init.js"></script>
+
+
+        <!-- App core js -->
+        <script src="assets/site/js/jquery.core.js"></script>
+        <script src="assets/site/js/jquery.app.js"></script>
+
+		<!--FooTable-->
+		<script src="assets/site/plugins/footable/js/footable.all.min.js"></script>
+		 <!--FooTable Example-->
+		<script src="assets/site/pages/jquery.footable.js"></script>
+
+
+
+        <script src="assets/site/pages/jquery.form-pickers.init.js"></script>
+
+        <script>
+            $("#product_name").on('change',function(){
+                //var frm_call = 'load_price';
+                //alert (frm_call);
+                $("#odr_price").empty();
+                var p_id = $(this).val();
+                $.ajax({
+                    url: 'functions/function_orders.php',
+                    type: 'post',
+                    data: {
+                        pr_id :p_id,
+                    },
+                    dataType: 'json',
+                    success:function(response){
+                        $("#odr_price").val(response);
+                    }
+                });
+            });
+        </script>
+		
+
+    </body>
+</html>
