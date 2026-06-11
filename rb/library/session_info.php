@@ -4,7 +4,7 @@
 
 session_start();
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_WARNING);
-ini_set('display_errors', 'off');
+ini_set('display_errors','off');
 
 
 	$conn = null;
@@ -12,10 +12,10 @@ ini_set('display_errors', 'off');
 	$authority_rox_table_name = null;
 	$login_rox_table_filed_email = null;
 	$login_rox_table_filed_level = null;
-	$authority_rox_status = null;
-	$login_rox_user_level = null;
+	$authority_rox_status= null;
+	$login_rox_user_level=null;
 	$roxwall_AUTH_ID = null;
-	$authority_rox_table_filed_web_access = null;
+	$authority_rox_table_filed_web_access =null;
 	$authority_rox_table_filed_chief_acc = null;
 	$authority_rox_table_filed_manager = null;
 	$authority_rox_table_filed_employee = null;
@@ -27,7 +27,7 @@ ini_set('display_errors', 'off');
 
 	$roxwall_AUTH_IDMD5 = null;
 	$roxwall_rowcount = null;
-	$roxwall_roxwall_u_id = null;
+	$roxwall_roxwall_u_id =null;
 	$user_check = null;
 	$user_check = $_SESSION['admin_user_email'] ?? null;
 	$roxwall_AUTH_IDMD5 = md5((string)$user_check);
@@ -45,16 +45,13 @@ ini_set('display_errors', 'off');
 			}
 			else{
 
-				$stmt = $conn->prepare("SELECT * FROM rox_admin_user WHERE rox_user_name=?");
-				$stmt->bind_param("s", $user_check);
-				$stmt->execute();
-				$result = $stmt->get_result();
+				$sql = "SELECT * FROM rox_admin_user WHERE rox_user_name='" . $conn->real_escape_string($user_check) . "'";
+				$result=mysqli_query($conn,$sql);
 				while($row=mysqli_fetch_array($result))
 				{
 					$roxwall_u_id=$row['rox_admin_id'];
 					$admin_role=$row['rox_admin_role'];
 				}
-				$stmt->close();
 			}
 
 		}
@@ -91,7 +88,7 @@ ini_set('display_errors', 'off');
 
 			if(isset($admin_role) && $admin_role != "Admin"){
 
-                $sql2 = "SELECT count(*) FROM ".$authority_rox_table_name." WHERE ".$authority_rox_table_filed_web_access." = '$link' AND ".($authority_rox_table_filed ?? '')." = '$authority_rox_status'";
+                $sql2 = "SELECT count(*) FROM ".$authority_rox_table_name." WHERE ".$authority_rox_table_filed_web_access." = '".$conn->real_escape_string($link)."' AND ".($authority_rox_table_filed ?? '')." = '$authority_rox_status'";
                 $result2=mysqli_query($conn,$sql2);
                 if($result2) {
                 while($row = mysqli_fetch_array($result2))
