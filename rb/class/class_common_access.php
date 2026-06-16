@@ -2,9 +2,9 @@
 
 class Common_access
 {
-    private static ?mysqli $db = null;
+    private static $db = null;
 
-    private static function getDb(): mysqli {
+    private static function getDb() {
         if (self::$db === null || !self::$db->ping()) {
             self::$db = new mysqli("localhost", "trbsysne2_royal", "Royal@508", "trbsysne2_royal");
             self::$db->set_charset("utf8mb4");

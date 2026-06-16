@@ -11,13 +11,13 @@
 class class_orders
 {
     /** @var mysqli|null Singleton database connection */
-    private static ?mysqli $db = null;
+    private static $db = null;
 
     /**
      * Get or create the singleton mysqli connection.
      * Replaces the per-method include("../library/dbcon.php") pattern.
      */
-    private static function getDb(): mysqli
+    private static function getDb()
     {
         if (self::$db === null || !self::$db->ping()) {
             $servername = "localhost";
@@ -63,7 +63,7 @@ class class_orders
         $ord_status = "",
         $ord_desc = "",
         $date = ""
-    ): int {
+    ) {
         $conn = self::getDb();
         $sql = "INSERT INTO rox_order_info
                 (rox_inv_id, rox_p_main_typ, rox_p_sub_type, rox_prd, rox_prd_val,
@@ -90,7 +90,7 @@ class class_orders
      * Increment quantity for an existing order line item.
      * @return int 1 on failure, 2 on success
      */
-    public static function update_into_order_info($ord_inid = "", $ord_prd_val = "", $odr_qty = ""): int
+    public static function update_into_order_info($ord_inid = "", $ord_prd_val = "", $odr_qty = "")
     {
         $conn = self::getDb();
         $sql = "UPDATE rox_order_info SET rox_prd_qty = rox_prd_qty + ? WHERE rox_inv_id = ? AND rox_prd_val = ?";
@@ -115,7 +115,7 @@ class class_orders
         $timepicker2 = "",
         $d_address = "",
         $ord_by = ""
-    ): int {
+    ) {
         $conn = self::getDb();
         $sql = "INSERT INTO rox_del_info
                 (rox_inv_id, rox_cust_id, rox_del_date, rox_del_time, rox_del_add, rox_inv_by, rox_del_status)
@@ -142,7 +142,7 @@ class class_orders
         $odr_adv = "",
         $odr_del_chrge = "",
         $odr_sr_chrge = ""
-    ): int {
+    ) {
         $conn = self::getDb();
         $sql = "INSERT INTO rox_payment
                 (rox_inv_id, rox_cust_id, rox_pay_typ, rox_dis, rox_advc, rox_del_charge, rox_ser_charge, rox_pay_status)
@@ -171,7 +171,7 @@ class class_orders
         $tele = "",
         $mobile = "",
         $date = ""
-    ): int {
+    ) {
         $conn = self::getDb();
         $sql = "INSERT INTO rox_customers
                 (cus_mobile, cus_fname, cus_title, cus_land, cus_address, cus_email, joined_date)
@@ -203,7 +203,7 @@ class class_orders
         $odr_sr_chrge = "",
         $finall = "",
         $date = ""
-    ): int {
+    ) {
         $conn = self::getDb();
         $sql = "INSERT INTO rox_payment
                 (rox_inv_id, rox_cust_id, rox_pay_typ, rox_dis, rox_advc, rox_pay_bal,
@@ -236,7 +236,7 @@ class class_orders
         $time = "",
         $tot = "",
         $ord_by = ""
-    ): int {
+    ) {
         $conn = self::getDb();
         date_default_timezone_set("Asia/Kolkata");
         $dd       = date("Y-m-d H:i:s");
@@ -280,7 +280,7 @@ class class_orders
         $cancel_reason = "",
         $cancel_by = "",
         $date = ""
-    ): int {
+    ) {
         $conn = self::getDb();
         $sql = "INSERT INTO rox_cancel_orders
                 (rox_inv_id, odr_cancel_reason, odr_cancel_by, cancel_date)
@@ -310,7 +310,7 @@ class class_orders
         $address = "",
         $tele = "",
         $mobile = ""
-    ): int {
+    ) {
         $conn = self::getDb();
         $sql = "UPDATE rox_customers
                 SET cus_mobile = ?, cus_fname = ?, cus_title = ?, cus_land = ?, cus_address = ?
@@ -345,7 +345,7 @@ class class_orders
         $d_delivery = "",
         $order_status = "",
         $date = ""
-    ): int {
+    ) {
         $conn = self::getDb();
         $sql = "UPDATE rox_orders SET
                 odr_product_name = ?, odr_chef_name = ?, odr_desc = ?, odr_price = ?,
@@ -373,7 +373,7 @@ class class_orders
      * Set all order items to 'Delivered' for an invoice.
      * @return int 1 on failure, 2 on success
      */
-    public static function update_into_order_status($inv = ""): int
+    public static function update_into_order_status($inv = "")
     {
         $conn = self::getDb();
         $sql = "UPDATE rox_order_info SET rox_ord_status = 'Delivered' WHERE rox_inv_id = ?";
@@ -391,7 +391,7 @@ class class_orders
      * Set invoice status to 'Delivered'.
      * @return int 1 on failure, 2 on success
      */
-    public static function update_into_invoice_status($inv = ""): int
+    public static function update_into_invoice_status($inv = "")
     {
         $conn = self::getDb();
         $sql = "UPDATE rox_invoice SET rox_inv_status = 'Delivered' WHERE rox_inv_auto_id = ?";
@@ -417,7 +417,7 @@ class class_orders
         $address = "",
         $tele = "",
         $mobile = ""
-    ): int {
+    ) {
         $conn = self::getDb();
         $sql = "UPDATE rox_customers
                 SET cus_mobile = ?, cus_fname = ?, cus_lname = ?, cus_land = ?,
@@ -438,7 +438,7 @@ class class_orders
      * FIX: removed trailing comma in SET clause ("SET rox_pay_bal='$va'," was invalid SQL).
      * @return int 1 on failure, 2 on success
      */
-    public static function update_into_payment($inv = "", $va = ""): int
+    public static function update_into_payment($inv = "", $va = "")
     {
         $conn = self::getDb();
         $sql = "UPDATE rox_payment SET rox_pay_bal = ? WHERE rox_inv_id = ?";
@@ -456,7 +456,7 @@ class class_orders
      * Update payment balance and mark as Paid.
      * @return int 1 on failure, 2 on success
      */
-    public static function update_into_payment_paid($inv = "", $va = ""): int
+    public static function update_into_payment_paid($inv = "", $va = "")
     {
         $conn = self::getDb();
         $sql = "UPDATE rox_payment SET rox_pay_bal = ?, rox_pay_status = 'Paid' WHERE rox_inv_id = ?";
@@ -474,7 +474,7 @@ class class_orders
      * Update payment status.
      * @return int 1 on failure, 2 on success
      */
-    public static function update_into_payment2($inv = "", $stat = ""): int
+    public static function update_into_payment2($inv = "", $stat = "")
     {
         $conn = self::getDb();
         $sql = "UPDATE rox_payment SET rox_pay_status = ? WHERE rox_inv_id = ?";
@@ -492,7 +492,7 @@ class class_orders
      * Update invoice balance.
      * @return int 1 on failure, 2 on success
      */
-    public static function update_into_invoice($inv = "", $ba = "", $va = ""): int
+    public static function update_into_invoice($inv = "", $ba = "", $va = "")
     {
         $conn = self::getDb();
         $sql = "UPDATE rox_invoice SET rox_inv_balance = ? WHERE rox_inv_id = ?";
@@ -510,7 +510,7 @@ class class_orders
      * Update invoice balance and set second-payment date.
      * @return int 1 on failure, 2 on success
      */
-    public static function update_into_second_invoice($inv = "", $ba = "", $pay = ""): int
+    public static function update_into_second_invoice($inv = "", $ba = "", $pay = "")
     {
         $conn = self::getDb();
         $date = date("Y-m-d H:i:s");
@@ -1574,7 +1574,7 @@ class class_orders
      * FIX: uses SELECT COUNT(*) instead of SELECT * + mysqli_num_rows.
      * @return int row count
      */
-    public static function check_order_info($inv = "", $prd = ""): int
+    public static function check_order_info($inv = "", $prd = "")
     {
         $conn = self::getDb();
         $sql = "SELECT COUNT(*) AS cnt FROM rox_order_info WHERE rox_inv_id = ? AND rox_prd_val = ?";
@@ -1592,7 +1592,7 @@ class class_orders
      * FIX: uses SELECT MAX(rox_inv_id) instead of SELECT * ORDER BY ... LIMIT 1.
      * @return int next invoice ID
      */
-    public static function select_inv_id(): int
+    public static function select_inv_id()
     {
         $conn = self::getDb();
         $sql = "SELECT MAX(rox_inv_id) AS max_id FROM rox_invoice";
@@ -1828,7 +1828,7 @@ class class_orders
      * Delete a legacy order from rox_orders.
      * @return int 1 on failure, 2 on success
      */
-    public static function delete_from_order($id = ""): int
+    public static function delete_from_order($id = "")
     {
         $conn = self::getDb();
         $sql = "DELETE FROM rox_orders WHERE odr_id = ?";
@@ -1846,7 +1846,7 @@ class class_orders
      * Delete a specific line item from order info.
      * @return int 1 on failure, 2 on success
      */
-    public static function delete_order_info($inv = "", $id = ""): int
+    public static function delete_order_info($inv = "", $id = "")
     {
         $conn = self::getDb();
         $sql = "DELETE FROM rox_order_info WHERE rox_inv_id = ? AND rox_ord_id = ?";
@@ -1871,7 +1871,7 @@ class class_orders
      * @param int $length desired string length
      * @return string random alphanumeric string
      */
-    public static function invoice_id(int $length = 10): string
+    public static function invoice_id(int $length = 10)
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $charLen = strlen($characters);
@@ -1892,7 +1892,7 @@ class class_orders
      * @return string the full invoice code (e.g. "RB-01005708")
      * @throws \RuntimeException on transaction failure
      */
-    public static function generate_invoice_id(): string
+    public static function generate_invoice_id()
     {
         $conn = self::getDb();
         $conn->begin_transaction();
@@ -1921,7 +1921,7 @@ class class_orders
      * Used when saving an order - items are added with a temp session ID,
      * then converted to the real invoice ID at save time.
      */
-    public static function update_temp_invoice_id(string $temp_id, string $real_id): bool
+    public static function update_temp_invoice_id(string $temp_id, string $real_id)
     {
         $conn = self::getDb();
         $stmt = $conn->prepare("UPDATE rox_order_info SET rox_inv_id = ? WHERE rox_inv_id = ?");

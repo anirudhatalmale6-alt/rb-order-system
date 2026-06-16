@@ -1,11 +1,18 @@
 <?php
 include('library/session_info.php');
 $pagetitle = ' - Dashboard';
+
 $pagedescr = ' ';
+
 $pagekeywords = ' ';
+
 include(INC_PATH . "system-info.php");
+
 include(INC_PATH . "header.php");
 include('class/class_dashboard.php');
+
+
+
 ?>
 
     <body>
@@ -13,129 +20,138 @@ include('class/class_dashboard.php');
         <!-- Navigation Bar-->
         <header id="topnav">
             <div class="topbar-main">
-                <?php include("includes/topmenu.php"); ?>
+                <!-- Start TOP Navigation -->
+				<?php include("includes/topmenu.php"); ?>
+				<!-- End TOP Navigation -->
             </div>
+
             <div class="navbar-custom">
-                <?php include("includes/mainmenu.php"); ?>
-            </div>
+                <!-- Start Main Menu -->
+				<?php include("includes/mainmenu.php"); ?>
+				<!-- End Main Menu -->
+            </div> <!-- end navbar-custom -->
         </header>
+        <!-- End Navigation Bar-->
+
 
         <div class="wrapper">
             <div class="container">
 
-                <!-- This Month -->
+                <!-- Page-Title -->
                 <div class="row">
                     <div class="col-sm-12">
-                        <h4 class="page-title">This Month <?php echo $admin_role; ?></h4>
+                        <div class="btn-group pull-right m-t-15">
+                            <!-- Start Settings Options -->
+							<?php //include("includes/settings.php"); ?>
+							<!-- End Settings Options -->
+                        </div>
+
+                        <h4 class="page-title">This Month <?php echo  $admin_role;?></h4>
+                        <p class="text-muted page-title-alt"><?php /*echo $_SESSION['username'];*/?></p>
                     </div>
                 </div>
 
                 <?php
-                    $date_frm = date("Y-m-01");
-                    $date_to = date("Y-m-t");
+                    $date = date("Y-m");
+                    $date_frm=$date.'-01';
+                    $date_to=$date.'-30';
                 ?>
-                <div class="row">
+				<div class="row">
                     <div class="col-md-6 col-sm-6 col-lg-2">
                         <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="This Month"></i>
+                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
                             <h4 class="text-dark">TOTAL <br>ORDERS</h4>
-                            <h2 class="text-primary text-center"><span data-plugin="counterup"><?php echo Dashboard::count_total_orders_this_month($date_frm, $date_to); ?></span></h2>
+                            <h2 class="text-primary text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_total_orders_this_month($date_frm,$date_to); ?></span></h2>
                         </div>
                     </div>
 
                     <div class="col-md-6 col-sm-6 col-lg-2">
                         <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="This Month"></i>
-                            <h4 class="text-dark">PENDING ORDERS</h4>
-                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo Dashboard::count_pending_orders_this_month($date_frm, $date_to); ?></span></h2>
+                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
+                            <h4 class="text-dark">TOTAL PENDING ORDERS</h4>
+                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_pending_orders_this_month($date_frm,$date_to); ?></span></h2>
                         </div>
                     </div>
 
                     <div class="col-md-6 col-sm-6 col-lg-2">
                         <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="This Month"></i>
-                            <h4 class="text-dark">DELIVERED</h4>
-                            <h2 class="text-success text-center"><span data-plugin="counterup"><?php echo Dashboard::count_delivered_orders($date_frm, $date_to); ?></span></h2>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 col-sm-6 col-lg-2">
-                        <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="This Month"></i>
-                            <h4 class="text-dark">NEW CUSTOMERS</h4>
-                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo Dashboard::count_new_users($date_frm, $date_to); ?></span></h2>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 col-sm-6 col-lg-2">
-                        <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="This Month"></i>
-                            <h4 class="text-dark">TOTAL REVENUE</h4>
-                            <h2 class="text-primary text-center"><span data-plugin="counterup"><?php echo number_format(Dashboard::get_total_revenue($date_frm, $date_to), 2); ?></span></h2>
+                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
+                            <h4 class="text-dark">TOTAL NEW CUSTOMERS</h4>
+                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_new_users($date_frm,$date_to); ?></span></h2>
                         </div>
                     </div>
                 </div>
 
 
-                <!-- Last Month -->
                 <div class="row">
                     <div class="col-sm-12">
+                        <div class="btn-group pull-right m-t-15">
+                            <!-- Start Settings Options -->
+							<?php //include("includes/settings.php"); ?>
+							<!-- End Settings Options -->
+                        </div>
+
                         <h4 class="page-title">Last Month</h4>
+                        <p class="text-muted page-title-alt"><?php /*echo $_SESSION['username'];*/?></p>
                     </div>
                 </div>
 
                 <?php
-                $last_month = new DateTime('first day of last month');
-                $date_frm = $last_month->format('Y-m-01');
-                $date_to = $last_month->format('Y-m-t');
+                $date_y = date("Y");
+                $date_m = date("m");
+                    if($date_m == 01){
+                        $date_m = 12;
+                    }else{
+                        $date_m=$date_m-1;
+                    }
+
+                $date_frm=$date_y.'-'.$date_m.'-01';
+                $date_to=$date_y.'-'.$date_m.'-30';
+
+//                echo $date_frm;
+//                echo $date_to;
                 ?>
 
                 <div class="row">
                     <div class="col-md-6 col-sm-6 col-lg-2">
                         <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last Month"></i>
+                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
                             <h4 class="text-dark">TOTAL <br>ORDERS</h4>
-                            <h2 class="text-primary text-center"><span data-plugin="counterup"><?php echo Dashboard::count_total_orders_this_month($date_frm, $date_to); ?></span></h2>
+                            <h2 class="text-primary text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_total_orders_this_month($date_frm,$date_to); ?></span></h2>
                         </div>
                     </div>
 
                     <div class="col-md-6 col-sm-6 col-lg-2">
                         <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last Month"></i>
-                            <h4 class="text-dark">PENDING ORDERS</h4>
-                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo Dashboard::count_pending_orders_this_month($date_frm, $date_to); ?></span></h2>
+                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
+                            <h4 class="text-dark">TOTAL PENDING ORDERS</h4>
+                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_pending_orders_this_month($date_frm,$date_to); ?></span></h2>
                         </div>
                     </div>
 
                     <div class="col-md-6 col-sm-6 col-lg-2">
                         <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last Month"></i>
-                            <h4 class="text-dark">DELIVERED</h4>
-                            <h2 class="text-success text-center"><span data-plugin="counterup"><?php echo Dashboard::count_delivered_orders($date_frm, $date_to); ?></span></h2>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 col-sm-6 col-lg-2">
-                        <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last Month"></i>
-                            <h4 class="text-dark">NEW CUSTOMERS</h4>
-                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo Dashboard::count_new_users($date_frm, $date_to); ?></span></h2>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 col-sm-6 col-lg-2">
-                        <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last Month"></i>
-                            <h4 class="text-dark">TOTAL REVENUE</h4>
-                            <h2 class="text-primary text-center"><span data-plugin="counterup"><?php echo number_format(Dashboard::get_total_revenue($date_frm, $date_to), 2); ?></span></h2>
+                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
+                            <h4 class="text-dark">TOTAL NEW CUSTOMERS</h4>
+                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_new_users($date_frm,$date_to); ?></span></h2>
                         </div>
                     </div>
                 </div>
+
+
+
+
+
+                <!-- End row-->
+
 
                 <!-- Footer -->
                 <footer class="footer text-right">
-                    <?php include("includes/footer.php"); ?>
+                    <!-- Footer Section Starts-->
+					<?php include("includes/footer.php"); ?>
+					<!-- Footer Section Ends -->
                 </footer>
+                <!-- End Footer -->
 
             </div>
         </div>
@@ -146,6 +162,8 @@ include('class/class_dashboard.php');
         <script src="assets/site/js/jquery.nicescroll.js"></script>
         <script src="assets/site/js/jquery.scrollTo.min.js"></script>
 
+
+<!--        <script src="assets/site/js/detect.js"></script>-->
         <script src="assets/site/js/fastclick.js"></script>
         <script src="assets/site/js/jquery.slimscroll.js"></script>
         <script src="assets/site/js/jquery.blockUI.js"></script>
@@ -161,7 +179,7 @@ include('class/class_dashboard.php');
         <script src="assets/site/plugins/raphael/raphael-min.js"></script>
 
         <!-- Dashboard 4 js -->
-        <script src="assets/site/pages/jquery.dashboard_4.js"></script>
+		<script src="assets/site/pages/jquery.dashboard_4.js"></script>
 
         <!-- App core js -->
         <script src="assets/site/js/jquery.core.js"></script>
