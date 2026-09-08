@@ -10,6 +10,37 @@ include(INC_PATH . "system-info.php");
 
 include(INC_PATH . "header.php");
 include('class/class_dashboard.php');
+?>
+<?php
+/*
+ * Renders one row of dashboard cards for a date range.
+ * Defined once so "This Month" and "Last Month" can never drift apart.
+ */
+if (!function_exists('rb_dashboard_cards')) {
+    function rb_dashboard_cards($date_frm, $date_to)
+    {
+        $cards = array(
+            array('TOTAL <br>ORDERS',       number_format(Dashboard::count_total_orders_this_month($date_frm, $date_to)),   'text-primary'),
+            array('PENDING <br>ORDERS',     number_format(Dashboard::count_pending_orders_this_month($date_frm, $date_to)), 'text-pink'),
+            array('NEW <br>CUSTOMERS',      number_format(Dashboard::count_new_users($date_frm, $date_to)),                 'text-pink'),
+            array('TOTAL <br>SALES',        number_format(Dashboard::total_sales($date_frm, $date_to), 2),                  'text-success'),
+            array('AMOUNT <br>COLLECTED',   number_format(Dashboard::total_collected($date_frm, $date_to), 2),              'text-info'),
+            array('BALANCE <br>DUE',        number_format(Dashboard::total_outstanding($date_frm, $date_to), 2),            'text-danger'),
+        );
+
+        foreach ($cards as $c) {
+            echo '<div class="col-md-6 col-sm-6 col-lg-2">'
+               .   '<div class="card-box widget-box-1 bg-white">'
+               .     '<h4 class="text-dark">' . $c[0] . '</h4>'
+               .     '<h2 class="' . $c[2] . ' text-center" style="font-size:22px">' . $c[1] . '</h2>'
+               .   '</div>'
+               . '</div>';
+        }
+    }
+}
+?>
+<?php
+
 
 
 
@@ -52,34 +83,14 @@ include('class/class_dashboard.php');
                 </div>
 
                 <?php
-                    $date = date("Y-m");
-                    $date_frm=$date.'-01';
-                    $date_to=$date.'-30';
+                    /* First and LAST day of the current month.
+                     * The old code hard-coded "-30", so the 31st was never
+                     * counted and February produced an invalid date. */
+                    $date_frm = date("Y-m-01");
+                    $date_to  = date("Y-m-t");
                 ?>
 				<div class="row">
-                    <div class="col-md-6 col-sm-6 col-lg-2">
-                        <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
-                            <h4 class="text-dark">TOTAL <br>ORDERS</h4>
-                            <h2 class="text-primary text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_total_orders_this_month($date_frm,$date_to); ?></span></h2>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 col-sm-6 col-lg-2">
-                        <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
-                            <h4 class="text-dark">TOTAL PENDING ORDERS</h4>
-                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_pending_orders_this_month($date_frm,$date_to); ?></span></h2>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 col-sm-6 col-lg-2">
-                        <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
-                            <h4 class="text-dark">TOTAL NEW CUSTOMERS</h4>
-                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_new_users($date_frm,$date_to); ?></span></h2>
-                        </div>
-                    </div>
+                    <?php rb_dashboard_cards($date_frm, $date_to); ?>
                 </div>
 
 
@@ -97,45 +108,16 @@ include('class/class_dashboard.php');
                 </div>
 
                 <?php
-                $date_y = date("Y");
-                $date_m = date("m");
-                    if($date_m == 01){
-                        $date_m = 12;
-                    }else{
-                        $date_m=$date_m-1;
-                    }
-
-                $date_frm=$date_y.'-'.$date_m.'-01';
-                $date_to=$date_y.'-'.$date_m.'-30';
-
-//                echo $date_frm;
-//                echo $date_to;
+                /* Previous month. The old code subtracted 1 from the month
+                 * number without rolling the YEAR back in January, and again
+                 * hard-coded day 30. strtotime handles both correctly. */
+                $prev_month = date("Y-m-01", strtotime("first day of last month"));
+                $date_frm   = $prev_month;
+                $date_to    = date("Y-m-t", strtotime($prev_month));
                 ?>
 
                 <div class="row">
-                    <div class="col-md-6 col-sm-6 col-lg-2">
-                        <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
-                            <h4 class="text-dark">TOTAL <br>ORDERS</h4>
-                            <h2 class="text-primary text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_total_orders_this_month($date_frm,$date_to); ?></span></h2>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 col-sm-6 col-lg-2">
-                        <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
-                            <h4 class="text-dark">TOTAL PENDING ORDERS</h4>
-                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_pending_orders_this_month($date_frm,$date_to); ?></span></h2>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 col-sm-6 col-lg-2">
-                        <div class="card-box widget-box-1 bg-white">
-                            <i class="fa fa-info-circle text-muted pull-right inform" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Last 24 Hours"></i>
-                            <h4 class="text-dark">TOTAL NEW CUSTOMERS</h4>
-                            <h2 class="text-pink text-center"><span data-plugin="counterup"><?php echo $count_admin_users = Dashboard::count_new_users($date_frm,$date_to); ?></span></h2>
-                        </div>
-                    </div>
+                    <?php rb_dashboard_cards($date_frm, $date_to); ?>
                 </div>
 
 

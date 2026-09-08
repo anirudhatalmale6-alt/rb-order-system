@@ -257,17 +257,31 @@ include(INC_PATH . "header.php");
                     <div class="col-lg-12">
                         <h4 class="m-t-0 header-title"><b>Fill customer information to create order</b></h4>
 
-                            <select  id="mobile_select" class="selectpicker" data-live-search="true"  data-style="btn-white">
+                            <!--
+                                Customer picker.
+
+                                This used to render EVERY customer in the
+                                database as an <option> (150k+ of them, ~18 MB
+                                of HTML) which is what made this page take so
+                                long to open. It is now a search box that asks
+                                the server for matches as you type, so the page
+                                opens instantly no matter how many customers
+                                are in the system.
+                            -->
+                            <div class="form-group col-lg-6" style="padding-left:0">
+                                <label for="mobile_search">Existing customer &ndash; type mobile number or name</label>
+                                <input type="text" id="mobile_search" class="form-control"
+                                       autocomplete="off"
+                                       placeholder="Start typing a mobile number or name (min 3 characters)">
+                                <div id="mobile_results" class="list-group"
+                                     style="display:none;position:absolute;z-index:1000;max-height:280px;overflow-y:auto;width:calc(100% - 30px);box-shadow:0 2px 6px rgba(0,0,0,.2);background:#fff;"></div>
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <!-- Kept so the existing change handler below still works.
+                                 Only ever holds the customer that was picked. -->
+                            <select id="mobile_select" style="display:none">
                                 <option value="">New Customer</option>
-                                <?php
-                                //include('class/class_orders.php');
-                                $prdct=class_orders::select_all_cus();
-                                while($data=mysqli_fetch_array($prdct)){
-                                    ?>
-                                    <option value="<?php echo $data['cus_id'];?>"><?php echo $data['cus_mobile']. '-'.$data['cus_fname'];?></option>
-                                    <?php
-                                }
-                                ?>
                             </select>
                             <br>
                             <br>
@@ -317,7 +331,13 @@ include(INC_PATH . "header.php");
                                 <div class="form-group">
                                     <label for="d_delivery" class="control-label">Date of Delivery</label>
                                     <div>
-                                        <input type="text" class="form-control datepicker" required name="d_delivery"  id="d_delivery" min="<?php echo date("Y-m-d"); ?>" />
+                                        <!-- readonly: the date can only be chosen from the calendar,
+                                             which starts at today. A past delivery date can no longer
+                                             be typed in by hand, and the server re-checks it on save. -->
+                                        <input type="text" class="form-control datepicker" required readonly
+                                               name="d_delivery" id="d_delivery"
+                                               data-date-start-date="<?php echo date("Y-m-d"); ?>"
+                                               placeholder="Select delivery date" style="background:#fff;cursor:pointer" />
                                     </div>
                                 </div>
                             </div>
@@ -371,7 +391,9 @@ include(INC_PATH . "header.php");
                             <div class="form-group">
                                 <label for="d_delivery" class="control-label">Manufacture Date</label>
                                 <div>
-                                    <input type="text" class="form-control datepicker" id="To_Date" name="odr_date" min="<?php echo date("Y-m-d"); ?>" />
+                                    <input type="text" class="form-control datepicker" readonly id="To_Date" name="odr_date"
+                                           data-date-start-date="<?php echo date("Y-m-d"); ?>"
+                                           style="background:#fff;cursor:pointer" />
                                 </div>
                             </div>
                         </div>
@@ -472,8 +494,7 @@ include(INC_PATH . "header.php");
                             $("#tele").val(cus_land);
                             $("#d_address").val(cus_address);
                             $("#emailAddress").val(cus_email);
-                            $('#mobile_select').val(c_id);
-                            $('#mobile_select').selectpicker('refresh')
+                            $('#mobile_select').html('<option value="'+c_id+'"></option>').val(c_id);
                         }
                     }
                 });
@@ -512,7 +533,10 @@ include(INC_PATH . "header.php");
     var date = new Date();
     date.setDate(date.getDate());
      $('.datepicker').datepicker({
-         startDate: date
+         startDate: date,       // today is the earliest selectable day
+         autoclose: true,
+         todayHighlight: true,
+         format: 'yyyy-mm-dd'
      });
 
 
@@ -574,6 +598,79 @@ include(INC_PATH . "header.php");
         $('#To_Date').val(d_delivery);
 
     });
+
+    /* ---------------------------------------------------------------
+     * Customer search.
+     * Asks the server for up to 20 matches 250 ms after typing stops,
+     * instead of shipping the whole customer table to the browser.
+     * --------------------------------------------------------------- */
+    (function () {
+        var searchTimer = null;
+        var lastTerm    = '';
+        var $box        = $('#mobile_search');
+        var $results    = $('#mobile_results');
+
+        function hideResults() { $results.hide().empty(); }
+
+        function fillCustomer(c) {
+            $('#mobile').val(c.cus_mobile);
+            $('#id').val(c.cus_id);
+            $('#fname').val(c.cus_fname);
+            $('#lname').val(c.cus_title);
+            $('#tele').val(c.cus_land);
+            $('#d_address').val(c.cus_address);
+            $('#emailAddress').val(c.cus_email);
+            $('#mobile_select').html('<option value="' + c.cus_id + '"></option>').val(c.cus_id);
+            $box.val(c.cus_mobile + ' - ' + c.cus_fname);
+            hideResults();
+        }
+
+        function render(rows) {
+            $results.empty();
+            if (!rows || rows.length === 0) {
+                $results.append('<span class="list-group-item text-muted">No customer found &ndash; leave blank to add a new one</span>').show();
+                return;
+            }
+            $.each(rows, function (i, c) {
+                $('<a href="#" class="list-group-item"></a>')
+                    .text(c.cus_mobile + ' - ' + c.cus_fname)
+                    .on('click', function (e) { e.preventDefault(); fillCustomer(c); })
+                    .appendTo($results);
+            });
+            $results.show();
+        }
+
+        $box.on('keyup', function () {
+            var term = $.trim($(this).val());
+
+            if (term.length < 3) { hideResults(); lastTerm = ''; return; }
+            if (term === lastTerm) { return; }
+            lastTerm = term;
+
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function () {
+                $.ajax({
+                    url: 'functions/function_customer_search.php',
+                    type: 'get',
+                    data: { term: term },
+                    dataType: 'json',
+                    success: render
+                });
+            }, 250);
+        });
+
+        /* Clearing the box means "this is a new customer". */
+        $box.on('change', function () {
+            if ($.trim($(this).val()) === '') {
+                $('#id').val('');
+                $('#mobile_select').html('<option value=""></option>').val('');
+            }
+        });
+
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('#mobile_results, #mobile_search').length) { hideResults(); }
+        });
+    })();
 
     $("#mobile_select").on('change',function(){
         //var frm_call = 'load_price';

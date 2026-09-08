@@ -6,8 +6,9 @@ class Common_access
 
     private static function getDb() {
         if (self::$db === null || !self::$db->ping()) {
-            self::$db = new mysqli("localhost", "trbsysne2_royal", "Royal@508", "trbsysne2_royal");
-            self::$db->set_charset("utf8mb4");
+            require __DIR__ . '/../library/dbconfig.php';
+            self::$db = new mysqli($servername, $db_user, $db_pass, $db_dbName);
+            rb_prepare_connection(self::$db);
         }
         return self::$db;
     }

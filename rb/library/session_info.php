@@ -29,8 +29,8 @@ ini_set('display_errors','off');
 	$roxwall_rowcount = null;
 	$roxwall_roxwall_u_id =null;
 	$user_check = null;
-	$user_check = $_SESSION['admin_user_email'];
-	$roxwall_AUTH_IDMD5 = md5($user_check);
+	$user_check = isset($_SESSION['admin_user_email']) ? $_SESSION['admin_user_email'] : null;
+	$roxwall_AUTH_IDMD5 = md5((string)$user_check);
 	if(isset($_SESSION)){
 		
 
@@ -56,41 +56,48 @@ ini_set('display_errors','off');
 			}
 			
 		}
-		if($roxwall_u_id != null)
+		if(isset($roxwall_u_id) && $roxwall_u_id != null)
 		{
 			$_SESSION['sendpage'] = null;
-			$link = $_GET['page'];
+			$link = isset($_GET['page']) ? $_GET['page'] : '';
 			$_SESSION['sendpage'] = $link;
 			$authority_rox_table_filed = null;
-		
-			if($admin_role=="Manager"){
-				
+
+			/* The role is stored with inconsistent casing in rox_admin_user
+			 * (e.g. "admin" vs "Admin"), so compare case-insensitively. */
+			$admin_role_key = strtolower(trim((string)$admin_role));
+
+			if($admin_role_key=="manager"){
+
 				$authority_rox_table_filed = $authority_rox_table_filed_manager;
-		
+
 			}
-			else if($admin_role=="Employee"){
-				
+			else if($admin_role_key=="employee"){
+
 				$authority_rox_table_filed = $authority_rox_table_filed_employee;
-		
+
 			}
-			else if($admin_role=="Accountant"){
-				
+			else if($admin_role_key=="accountant"){
+
 				$authority_rox_table_filed = $authority_rox_table_filed_acc;
 			}
-			else if($admin_role=="Chief Accountant"){
-				
+			else if($admin_role_key=="chief accountant"){
+
 				$authority_rox_table_filed = $authority_rox_table_filed_chief_acc;
-			}else if($admin_role=="Sales"){
-				$authority_rox_table_filed = $authority_rox_table_filed_rox_sales;
+			}else if($admin_role_key=="sales"){
+				$authority_rox_table_filed = isset($authority_rox_table_filed_rox_sales) ? $authority_rox_table_filed_rox_sales : null;
 			}
 
 
 
 			
-			if($admin_role != "Admin"){
+			if($admin_role_key != "admin" && $authority_rox_table_filed !== null && $authority_rox_table_filed !== ""){
 
-                $sql2 = "SELECT count(*) FROM ".$authority_rox_table_name." WHERE ".$authority_rox_table_filed_web_access." = '$link' AND ".$authority_rox_table_filed." = '$authority_rox_status'";
-                //$sql2 = "SELECT count(*) FROM rox_access WHERE rox_web_access = ".$link." AND rox_manager = '1'";
+                /* Only run the permission lookup when we actually resolved a
+                 * column for this role. Previously an unknown role left the
+                 * column name empty and produced "... AND  = '1'", which PHP
+                 * 5.6 swallowed silently but PHP 8 turns into a fatal 500. */
+                $sql2 = "SELECT count(*) FROM ".$authority_rox_table_name." WHERE ".$authority_rox_table_filed_web_access." = '".mysqli_real_escape_string($conn,$link)."' AND ".$authority_rox_table_filed." = '".mysqli_real_escape_string($conn,$authority_rox_status)."'";
                 $result2=mysqli_query($conn,$sql2);
                 if($result2) {
                 while($row = mysqli_fetch_array($result2))
@@ -103,7 +110,7 @@ ini_set('display_errors','off');
 
             }
 
-			if($admin_role=="Admin"){
+			if($admin_role_key=="admin"){
 				$roxwall_rowcount=1;
 			}
 			if($roxwall_rowcount==0){
@@ -122,6 +129,7 @@ ini_set('display_errors','off');
 
 	function check_permission($admin_role){
 
+        if (!defined('USER_LEVELS')) { return; }
         $user_level = unserialize (USER_LEVELS);
         $cashier_permissions = unserialize (CASHIER_PERMISSIONS);
         $accountant_permissions = unserialize (ACCOUNTANT_PERMISSIONS);

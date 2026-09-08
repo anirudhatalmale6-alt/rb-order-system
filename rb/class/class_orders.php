@@ -19,17 +19,11 @@ class class_orders
      */
     private static function getDb()
     {
-        if (self::$db === null || !self::$db->ping()) {
-            $servername = "localhost";
-            $db_user    = "trbsysne2_royal";
-            $db_pass    = "Royal@508";
-            $db_dbName  = "trbsysne2_royal";
+        if (self::$db === null) {
+            require __DIR__ . '/../library/dbconfig.php';
 
             self::$db = new mysqli($servername, $db_user, $db_pass, $db_dbName);
-            if (self::$db->connect_error) {
-                throw new \RuntimeException("DB connection failed: " . self::$db->connect_error);
-            }
-            self::$db->set_charset("utf8mb4");
+            rb_prepare_connection(self::$db);
         }
         return self::$db;
     }
@@ -189,6 +183,42 @@ class class_orders
     }
 
     /**
+     * Insert a customer and return the cus_id that MySQL just assigned.
+     *
+     * The old flow was insert_into_customers() followed by
+     * select_all_cus_where_last() = "SELECT MAX(cus_id)". With two cashiers
+     * saving at the same moment, both read the same MAX and the second order
+     * was filed against the first cashier's customer. insert_id is per
+     * connection, so it is always this request's own row.
+     *
+     * @return int|null
+     */
+    public static function insert_customer_returning_id(
+        $fname = "",
+        $lname = "",
+        $email = "",
+        $address = "",
+        $tele = "",
+        $mobile = "",
+        $date = ""
+    ) {
+        $conn = self::getDb();
+        $sql = "INSERT INTO rox_customers
+                (cus_mobile, cus_fname, cus_title, cus_land, cus_address, cus_email, joined_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        if ($stmt === false) { return null; }
+        $stmt->bind_param("sssssss", $mobile, $fname, $lname, $tele, $address, $email, $date);
+        if (!$stmt->execute()) {
+            $stmt->close();
+            return null;
+        }
+        $newId = $conn->insert_id;
+        $stmt->close();
+        return $newId;
+    }
+
+    /**
      * Insert a payment record with all fields including balance and date.
      * @return int 1 on failure, 2 on success
      */
@@ -217,10 +247,114 @@ class class_orders
         );
         if (!$stmt->execute()) {
             $stmt->close();
+            self::$lastPaymentId = null;
             return 1;
         }
+        // Remember THIS request's payment row. select_all_pay() used to do
+        // "SELECT MAX(rox_line_id)", which under two simultaneous saves handed
+        // both invoices the same payment record.
+        self::$lastPaymentId = $conn->insert_id;
         $stmt->close();
         return 2;
+    }
+
+    /** Payment row id created by the last insert_into_payments() call. */
+    private static $lastPaymentId = null;
+
+    public static function last_payment_id()
+    {
+        return self::$lastPaymentId;
+    }
+
+    /**
+     * Create the invoice row and let MySQL allocate the invoice number.
+     *
+     * rox_invoice.rox_inv_id is an AUTO_INCREMENT column, so the database
+     * already hands out a unique number per INSERT, under any amount of
+     * concurrency. We insert first, read the id MySQL assigned, and stamp
+     * rox_inv_auto_id with the matching "RB-0<id>" code.
+     *
+     * This replaces generate_invoice_id(), which derived the next number
+     * from MAX(rox_inv_auto_id)+1. Two cashiers saving in the same second
+     * both read the same MAX and were given the same invoice code - there
+     * are already 935 duplicated invoice codes in the live database because
+     * of this, with two customers' items sitting on one bill.
+     *
+     * @return string|null the invoice code, e.g. "RB-0173154"
+     */
+    public static function create_invoice_get_code(
+        $cus_id = "",
+        $rox_payment_id = "",
+        $datei = "",
+        $datee = "",
+        $time = "",
+        $tot = "",
+        $ord_by = ""
+    ) {
+        $conn = self::getDb();
+        date_default_timezone_set("Asia/Kolkata");
+        $dd       = date("Y-m-d H:i:s");
+        $ord_time = date("h:i:sa");
+        $placeholder = '';
+
+        $sql = "INSERT INTO rox_invoice
+                (rox_inv_cus_id, rox_inv_auto_id, rox_inv_pay_id, rox_inv_date, rox_ord_time,
+                 rox_inv_time, rox_inv_due, rox_inv_by, rox_inv_status, rox_inv_balance, rox_del_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?)";
+        $stmt = $conn->prepare($sql);
+        if ($stmt === false) { return null; }
+        $stmt->bind_param(
+            "ssssssssss",
+            $cus_id, $placeholder, $rox_payment_id, $dd, $ord_time,
+            $time, $datei, $ord_by, $tot, $datee
+        );
+        if (!$stmt->execute()) {
+            $stmt->close();
+            return null;
+        }
+        $newRowId = $conn->insert_id;
+        $stmt->close();
+
+        if (!$newRowId) { return null; }
+
+        // Same "RB-0" + number format the system has always used.
+        $invoiceCode = "RB-0" . $newRowId;
+
+        $up = $conn->prepare("UPDATE rox_invoice SET rox_inv_auto_id = ? WHERE rox_inv_id = ?");
+        if ($up === false) { return null; }
+        $up->bind_param("si", $invoiceCode, $newRowId);
+        $ok = $up->execute();
+        $up->close();
+
+        return $ok ? $invoiceCode : null;
+    }
+
+    /**
+     * Fill in the payment id on an invoice once the payment row exists.
+     */
+    public static function set_invoice_payment_id($invoiceCode, $paymentId)
+    {
+        $conn = self::getDb();
+        $stmt = $conn->prepare("UPDATE rox_invoice SET rox_inv_pay_id = ? WHERE rox_inv_auto_id = ?");
+        if ($stmt === false) { return false; }
+        $stmt->bind_param("ss", $paymentId, $invoiceCode);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
+
+    /**
+     * Update the invoice total once the line discounts have been applied.
+     */
+    public static function set_invoice_balance($invoiceCode, $balance)
+    {
+        $conn = self::getDb();
+        $stmt = $conn->prepare("UPDATE rox_invoice SET rox_inv_balance = ? WHERE rox_inv_auto_id = ?");
+        if ($stmt === false) { return false; }
+        $stmt->bind_param("ss", $balance, $invoiceCode);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
     }
 
     /**
@@ -698,6 +832,67 @@ class class_orders
     }
 
     /**
+     * Search customers by mobile number or name.
+     *
+     * Replaces select_all_cus() on the Add Order screen. That method pulled
+     * all 150k+ customers into a single <select>, which produced ~18 MB of
+     * HTML on every page load and locked the browser up while bootstrap-select
+     * built a DOM node for each one.
+     *
+     * A prefix match ("12345%") is used deliberately: a leading wildcard
+     * cannot use the index on cus_mobile.
+     *
+     * @return array
+     */
+    public static function search_customers($term, $limit = 20)
+    {
+        $conn = self::getDb();
+
+        $term = trim((string)$term);
+        if ($term === '') {
+            return array();
+        }
+
+        $limit = (int)$limit;
+        if ($limit < 1)  { $limit = 1; }
+        if ($limit > 50) { $limit = 50; }
+
+        $prefix = $term . '%';
+
+        // Digits => phone lookup. Anything else => name lookup.
+        if (ctype_digit(str_replace(array(' ', '-', '+'), '', $term))) {
+            $sql = "SELECT cus_id, cus_mobile, cus_fname, cus_title, cus_land, cus_address, cus_email
+                      FROM rox_customers
+                     WHERE cus_mobile LIKE ? OR cus_land LIKE ?
+                     ORDER BY cus_id DESC
+                     LIMIT " . $limit;
+            $stmt = $conn->prepare($sql);
+            if ($stmt === false) { return array(); }
+            $stmt->bind_param("ss", $prefix, $prefix);
+        } else {
+            $sql = "SELECT cus_id, cus_mobile, cus_fname, cus_title, cus_land, cus_address, cus_email
+                      FROM rox_customers
+                     WHERE cus_fname LIKE ?
+                     ORDER BY cus_id DESC
+                     LIMIT " . $limit;
+            $stmt = $conn->prepare($sql);
+            if ($stmt === false) { return array(); }
+            $stmt->bind_param("s", $prefix);
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $rows = array();
+        while ($row = $result->fetch_assoc()) {
+            $rows[] = $row;
+        }
+        $stmt->close();
+
+        return $rows;
+    }
+
+    /**
      * Get customer by cus_id.
      * @return mysqli_result|false
      */
@@ -1157,6 +1352,92 @@ class class_orders
         $conn = self::getDb();
         $sql = "SELECT * FROM rox_order_info WHERE rox_ord_status != 'Cancelled'";
         $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        return $result;
+    }
+
+    /**
+     * One query for the whole "product sold" report.
+     *
+     * The report page used to run SELECT * over rox_order_info (357,000 rows,
+     * no date filter) and then fire FOUR more queries per row to fetch the
+     * invoice, the customer, the product and the payment - roughly 1.4 million
+     * queries for one page. It took 104 seconds and produced a 194 MB page.
+     *
+     * Everything is joined here instead, and the report is always bounded by a
+     * date range, so the same page answers in well under a second.
+     *
+     * @return mysqli_result|false
+     */
+    public static function report_product_sold(
+        $main_cate = '',
+        $sub_cate  = '',
+        $product   = '',
+        $date_from = '',
+        $date_to   = '',
+        $limit     = 2000
+    ) {
+        $conn = self::getDb();
+
+        $where  = array("oi.rox_ord_status <> 'Cancelled'");
+        $types  = '';
+        $params = array();
+
+        // Always bounded. Falling back to the current month keeps the report
+        // usable when the user has not picked a range yet.
+        if ($date_from === '' || $date_to === '') {
+            $date_from = date('Y-m-01');
+            $date_to   = date('Y-m-t');
+        }
+        $where[]  = "oi.ord_date BETWEEN ? AND ?";
+        $types   .= 'ss';
+        $params[] = $date_from;
+        $params[] = $date_to;
+
+        if ($main_cate !== '' && $main_cate !== null) {
+            $where[]  = "oi.rox_p_main_typ = ?";
+            $types   .= 's';
+            $params[] = $main_cate;
+        }
+        if ($sub_cate !== '' && $sub_cate !== null) {
+            $where[]  = "oi.rox_p_sub_type = ?";
+            $types   .= 's';
+            $params[] = $sub_cate;
+        }
+        if ($product !== '' && $product !== null) {
+            $where[]  = "oi.rox_prd_val = ?";
+            $types   .= 's';
+            $params[] = $product;
+        }
+
+        $limit = (int)$limit;
+        if ($limit < 1)    { $limit = 1; }
+        if ($limit > 20000) { $limit = 20000; }
+
+        $sql = "SELECT
+                    oi.rox_inv_id, oi.rox_prd, oi.rox_prd_val, oi.rox_prd_qty,
+                    oi.rox_gre, oi.rox_gre_info, oi.rox_gre_info2, oi.rox_des,
+                    oi.rox_gre_des, oi.ord_date,
+                    i.rox_inv_auto_id, i.rox_inv_status, i.rox_inv_balance,
+                    i.rox_inv_date, i.rox_inv_cus_id, i.rox_del_date, i.rox_inv_time,
+                    c.cus_fname, c.cus_address,
+                    p.rox_prd_name,
+                    pay.rox_pay_status
+                  FROM rox_order_info oi
+                  LEFT JOIN rox_invoice   i   ON i.rox_inv_auto_id = oi.rox_inv_id
+                  LEFT JOIN rox_customers c   ON c.cus_id          = i.rox_inv_cus_id
+                  LEFT JOIN rox_product   p   ON p.rox_auto_id     = oi.rox_prd_val
+                  LEFT JOIN rox_payment   pay ON pay.rox_inv_id    = oi.rox_inv_id
+                 WHERE " . implode(' AND ', $where) . "
+                 GROUP BY oi.rox_line_id
+                 ORDER BY oi.rox_line_id DESC
+                 LIMIT " . $limit;
+
+        $stmt = $conn->prepare($sql);
+        if ($stmt === false) { return false; }
+        $stmt->bind_param($types, ...$params);
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();

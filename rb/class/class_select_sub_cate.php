@@ -2,8 +2,9 @@
 
 if (isset($_POST['paracall'])) {
 
-    $db = new mysqli("localhost", "trbsysne2_royal", "Royal@508", "trbsysne2_royal");
-    $db->set_charset("utf8mb4");
+    require __DIR__ . '/../library/dbconfig.php';
+    $db = new mysqli($servername, $db_user, $db_pass, $db_dbName);
+    rb_prepare_connection($db);
 
     if ($_POST['paracall'] == "load_subcat") {
         $main_cate_id = $_POST["main_cate_id"];

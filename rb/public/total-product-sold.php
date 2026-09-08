@@ -159,61 +159,50 @@ include(INC_PATH . "header.php");
                                 </div>
                                 <tbody>
                                 <?php
-                                $ttt=null;
-                                include("class/class_orders.php");
-                                $prdct=class_orders::select_all_from_odr_all();
-
-                                if (isset($_GET['m_c']) != '' || isset($_GET['s_c'])== '' || isset($_GET['date']) || isset($_GET['date1'])) {
-                                    $prdct=class_orders::select_all_from_odr_main(isset($_GET['m_c']),isset($_GET['date']),isset($_GET['date1']));
-                                } if ( isset($_GET['s_c'])!= '') {
-                                    $prdct=class_orders::select_all_from_odr_sub($_GET['m_c'],$_GET['s_c'],$_GET['date'],$_GET['date1']);
-                                }if (isset($_GET['pro']) != '' ) {
-                                    $prdct=class_orders::select_all_from_odr_pro($_GET['m_c'],$_GET['s_c'],$_GET['pro'],$_GET['date'],$_GET['date1']);
-                                }
-                                if (isset($_GET['m_c'])== '') {
-                                    $prdct=class_orders::select_all_from_odr_all();
-                                }
-                                 
-                                while($data=mysqli_fetch_array($prdct)){
-
-                                    $rox_inv_id=$data['rox_inv_id'];
-                                    $rox_prd=$data['rox_prd'];
-                                    $rox_prd_val=$data['rox_prd_val'];
-                                    //echo $rox_inv_id;
-
-                                    $prdct23=class_orders::select_all_from_inv($rox_inv_id);
-                                    $data23=mysqli_fetch_array($prdct23);
-                                        $i=$data23['rox_inv_auto_id'];
-                                        $rox_inv_status=$data23['rox_inv_status'];
-                                        $rox_inv_balance=$data23['rox_inv_balance'];
-                                        $rox_inv_date=$data23['rox_inv_date'];
-                                        $rox_inv_cus_id=$data23['rox_inv_cus_id'];
-
-                                    $prdct233_=class_orders::select_all_from_cust($rox_inv_cus_id);
-                                    $data233=mysqli_fetch_array($prdct233_);
-                                    $cus_fname=$data233['cus_fname'];
-                                    $cus_address=$data233['cus_address'];
-                                    //echo $rox_inv_cus_id;
-
-
-                                    $prdct2p=class_orders::seleect_all_from_product($rox_prd_val);
-                                    $data2p=mysqli_fetch_array($prdct2p);
-
-                                    $rox_prd_name=$data2p['rox_prd_name'];
-
-                                    //$rox_gre_des=$data2p['rox_gre_des'];
-                                    $rox_gre=$data['rox_gre'];
-                                    $rox_gre_info=$data['rox_gre_info'];
-                                    $rox_gre_info2=$data['rox_gre_info2'];
-                                    $rox_des=$data['rox_des'];
-                                    //$rox_ord_status=$data['rox_ord_status'];
-                                    $rox_gre_des=$data['rox_gre_des'];
-
-                                    $bal=class_orders::select_all_from_payments($rox_inv_id);
-                                    $data_bal=mysqli_fetch_array($bal);
-                                        $rox_pay_status=$data_bal['rox_pay_status'];
-
-                                        $ttt += $rox_inv_balance;
+                                $ttt=null;
+                                include("class/class_orders.php");
+
+                                /* One JOINed, date-bounded query instead of
+                                 * SELECT * over 357,000 order lines followed by
+                                 * four more queries per row. */
+                                $rep_m_c   = isset($_GET['m_c'])   ? $_GET['m_c']   : '';
+                                $rep_s_c   = isset($_GET['s_c'])   ? $_GET['s_c']   : '';
+                                $rep_pro   = isset($_GET['pro'])   ? $_GET['pro']   : '';
+                                $rep_date  = isset($_GET['date'])  ? $_GET['date']  : '';
+                                $rep_date1 = isset($_GET['date1']) ? $_GET['date1'] : '';
+
+                                $prdct = class_orders::report_product_sold(
+                                    $rep_m_c, $rep_s_c, $rep_pro, $rep_date, $rep_date1
+                                );
+
+                                while($prdct && $data=mysqli_fetch_array($prdct)){
+
+                                    $rox_inv_id      = $data['rox_inv_id'];
+                                    $rox_prd         = $data['rox_prd'];
+                                    $rox_prd_val     = $data['rox_prd_val'];
+
+                                    $i               = $data['rox_inv_auto_id'];
+                                    $rox_inv_status  = $data['rox_inv_status'];
+                                    $rox_inv_balance = $data['rox_inv_balance'];
+                                    $rox_inv_date    = $data['rox_inv_date'];
+                                    $rox_inv_cus_id  = $data['rox_inv_cus_id'];
+
+                                    $cus_fname       = $data['cus_fname'];
+                                    $cus_address     = $data['cus_address'];
+                                    $rox_prd_name    = $data['rox_prd_name'];
+
+                                    $rox_gre         = $data['rox_gre'];
+                                    $rox_gre_info    = $data['rox_gre_info'];
+                                    $rox_gre_info2   = $data['rox_gre_info2'];
+                                    $rox_des         = $data['rox_des'];
+                                    $rox_gre_des     = $data['rox_gre_des'];
+
+                                    $rox_pay_status  = $data['rox_pay_status'];
+
+                                    // still referenced further down the page
+                                    $data23 = $data;
+
+                                    $ttt += $rox_inv_balance;
 
                                 ?>
                                     <tr>

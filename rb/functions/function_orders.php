@@ -103,13 +103,57 @@ if (isset($_POST["print_order"])) {
     $odr_pay_bal = 1000;
     $tot = $_POST['tot'];
 
-    // Generate real invoice ID atomically
-    $real_inv_id = class_orders::generate_invoice_id();
+    /* ------------------------------------------------------------------
+     * A delivery date in the past makes no sense, so refuse it here as well
+     * as in the calendar. The browser check can be bypassed; this one cannot.
+     * ------------------------------------------------------------------ */
+    $delivery_ts = strtotime($datee);
+    if ($delivery_ts === false || date('Y-m-d', $delivery_ts) < $date) {
+        echo '<script type="text/javascript">'
+           . 'alert("The delivery date cannot be in the past. Please choose today or a later date.");'
+           . 'window.location="../add-order?status=baddate";</script>';
+        exit;
+    }
 
-    // Update all temp order items to use the real invoice ID
-    class_orders::update_temp_invoice_id($temp_inv_id, $real_inv_id);
+    /* ------------------------------------------------------------------
+     * Customer first, so the invoice can be created with the right cus_id.
+     *
+     * insert_customer_returning_id() uses mysqli insert_id instead of the old
+     * "SELECT MAX(cus_id)" - with two cashiers saving at once, MAX() handed
+     * the second order the first cashier's brand new customer.
+     * ------------------------------------------------------------------ */
+    if (!empty($cuid)) {
+        $mobile_check = class_orders::select_all_cus_where_mobile($cuid);
+        if ($mobile_check && mysqli_num_rows($mobile_check) >= 1) {
+            $data22 = mysqli_fetch_array($mobile_check);
+            $cus_id = $data22['cus_id'];
+            class_orders::update_customer($cuid, $fname, $lname, $address, $tele, $mobile);
+        } else {
+            $cus_id = class_orders::insert_customer_returning_id($fname, $lname, $email, $address, $tele, $mobile, $date);
+        }
+    } else {
+        $cus_id = class_orders::insert_customer_returning_id($fname, $lname, $email, $address, $tele, $mobile, $date);
+    }
 
-    $inv_id = $real_inv_id;
+    /* ------------------------------------------------------------------
+     * The invoice number now comes from the database.
+     *
+     * rox_invoice.rox_inv_id is AUTO_INCREMENT, so inserting the invoice row
+     * IS the allocation - MySQL guarantees a unique number no matter how many
+     * cashiers save at the same instant. The old code worked out the next
+     * number with MAX(...)+1 before the order was saved, which is why two
+     * users on the Add Order page ended up sharing an invoice and mixing
+     * their items together.
+     * ------------------------------------------------------------------ */
+    $inv_id = class_orders::create_invoice_get_code($cus_id, 0, $datei, $datee, $time, $tot, $ord_by);
+
+    if ($inv_id === null) {
+        echo '<script type="text/javascript">window.location="../add-order?status=failed";</script>';
+        exit;
+    }
+
+    // Move this session's staged items onto the invoice number just allocated.
+    class_orders::update_temp_invoice_id($temp_inv_id, $inv_id);
 
     // Calculate totals with discount logic
     $sum = 0;
@@ -138,27 +182,12 @@ if (isset($_POST["print_order"])) {
     $finall1 = ($odr_sr_val / 100) * $a34;
     $fina = ($finall + $finall1) - $odr_adv_val;
 
-    // Customer handling
-    if (!empty($cuid)) {
-        $mobile_check = class_orders::select_all_cus_where_mobile($cuid);
-        $cou = mysqli_num_rows($mobile_check);
-        if ($cou >= 1) {
-            $data22 = mysqli_fetch_array($mobile_check);
-            $cus_id = $data22['cus_id'];
-            class_orders::update_customer($cuid, $fname, $lname, $address, $tele, $mobile);
-        } else {
-            class_orders::insert_into_customers($fname, $lname, $email, $address, $tele, $mobile, $date);
-            $cus_id = class_orders::select_all_cus_where_last();
-        }
-    } else {
-        class_orders::insert_into_customers($fname, $lname, $email, $address, $tele, $mobile, $date);
-        $cus_id = class_orders::select_all_cus_where_last();
-    }
-
     class_orders::insert_into_payments($inv_id, $cus_id, $pay_type, $odr_dis_val, $odr_adv_val, $odr_pay_bal, $odr_del_val, $odr_sr_val, $fina, $date);
-    $rox_payment_id = class_orders::select_all_pay();
 
-    $result = class_orders::insert_into_invoice($inv_id, $cus_id, $rox_payment_id, $datei, $datee, $time, $tot, $ord_by);
+    // insert_id of the row this request just created, not MAX(rox_line_id).
+    $rox_payment_id = class_orders::last_payment_id();
+
+    $result = class_orders::set_invoice_payment_id($inv_id, $rox_payment_id) ? 2 : 1;
 
     // Update product discount calculations
     $select_product = class_orders::select_from_product($inv_id);
